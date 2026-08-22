@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+  ESP32 RC Car Controller Reference Layout
+  This file is included for legacy XML references or integration.
+  Our main application uses Jetpack Compose (Kotlin declarative UI) in MainActivity.kt 
+  for high-performance rendering, custom animations, and a rich dark tech theme.
+-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#14141E">
+
+    <!-- Connection Panel -->
+    <LinearLayout
+        android:id="@+id/connection_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:layout_alignParentTop="true">
+        
+        <TextView
+            android:id="@+id/status_label"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="DISCONNECTED"
+            android:textColor="#FF3366" />
+            
+        <Button
+            android:id="@+id/connect_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CONNECT" />
+    </LinearLayout>
+
+    <!-- 3x3 Control Grid -->
+    <GridLayout
+        android:id="@+id/control_grid"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:rowCount="3"
+        android:columnCount="3"
+        android:layout_centerInParent="true">
+
+        <!-- Row 1 -->
+        <View android:layout_width="80dp" android:layout_height="80dp" />
+        <Button
+            android:id="@+id/btn_forward"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:text="▲" />
+        <View android:layout_width="80dp" android:layout_height="80dp" />
+
+        <!-- Row 2 -->
+        <Button
+            android:id="@+id/btn_left"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:text="◀" />
+        <Button
+            android:id="@+id/btn_stop"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:text="■ STOP"
+            android:backgroundTint="#FF3366" />
+        <Button
+            android:id="@+id/btn_right"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:text="▶" />
+
+        <!-- Row 3 -->
+        <View android:layout_width="80dp" android:layout_height="80dp" />
+        <Button
+            android:id="@+id/btn_backward"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:text="▼" />
+        <View android:layout_width="80dp" android:layout_height="80dp" />
+    </GridLayout>
+
+    <!-- Speed Slider Panel -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_alignParentBottom="true"
+        android:padding="24dp">
+        
+        <TextView
+            android:id="@+id/speed_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="SPEED: 200"
+            android:textColor="#00D2FC" />
+            
+        <SeekBar
+            android:id="@+id/speed_slider"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:min="100"
+            android:max="255"
+            android:progress="200" />
+    </LinearLayout>
+
+</RelativeLayout>

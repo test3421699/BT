@@ -1,0 +1,8 @@
+{
+  "name": "RC Car Controller",
+  "description": "An advanced Bluetooth Serial controller for ESP32-powered RC cars featuring start/stop session activation, customizable sliders, trim, dynamic speed control, and real-time telemetry.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
