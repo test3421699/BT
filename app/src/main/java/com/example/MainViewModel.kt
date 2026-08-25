@@ -5,6 +5,7 @@ import android.content.Context
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -141,6 +142,17 @@ class MainViewModel(private val context: Context) : ViewModel() {
 
         // Automatically check paired devices if permissions are already granted
         refreshPairedDevices()
+
+        // Automatically stop & lock controller if the device disconnects
+        viewModelScope.launch {
+            bluetoothManager.connectionState.collect { state ->
+                if (state == ConnectionState.DISCONNECTED && _isControllerStarted.value) {
+                    _isControllerStarted.value = false
+                    _activeMovement.value = "S"
+                    Toast.makeText(context, "Bluetooth Disconnected: Controller Locked", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 
     fun toggleControllerStart() {
@@ -153,34 +165,46 @@ class MainViewModel(private val context: Context) : ViewModel() {
 
     /**
      * Starts the controller, activates the UI buttons, and sends the default / presetted values
-     * for speed, steering trim, custom sliders, and robot mode to the ESP32.
+     * for speed, steering trim, custom sliders (prefix + value), and robot mode to the ESP32.
      */
     fun startController() {
         _isControllerStarted.value = true
 
-        // 1. Send Stop command first to ensure safe stationary startup
-        _activeMovement.value = "S"
-        bluetoothManager.sendCommand(resolveCommand("S"))
+        viewModelScope.launch {
+            // 1. Send Stop command first to ensure safe stationary startup
+            _activeMovement.value = "S"
+            bluetoothManager.sendCommand(resolveCommand("S"))
+            delay(40)
 
-        // 2. Send presetted Speed value
-        val speedCmd = "${_speedPrefix.value}${_currentSpeed.value}"
-        bluetoothManager.sendCommand(speedCmd)
+            // 2. Send presetted Speed value
+            val speedCmd = "${_speedPrefix.value}${_currentSpeed.value}"
+            bluetoothManager.sendCommand(speedCmd)
+            delay(40)
 
-        // 3. Send presetted Steering Trim value
-        val trimCmd = "${_trimPrefix.value}${_steeringTrim.value}"
-        bluetoothManager.sendCommand(trimCmd)
+            // 3. Send presetted Steering Trim value
+            val trimCmd = "${_trimPrefix.value}${_steeringTrim.value}"
+            bluetoothManager.sendCommand(trimCmd)
+            delay(40)
 
-        // 4. Send all presetted Custom Slider values
-        _customSliders.value.forEach { slider ->
-            bluetoothManager.sendCommand("${slider.prefix}${slider.current}")
+            // 4. Send all presetted Custom Slider values along with their configured prefixes
+            val currentSliders = _customSliders.value
+            currentSliders.forEach { slider ->
+                val sliderCmd = "${slider.prefix}${slider.current}"
+                bluetoothManager.sendCommand(sliderCmd)
+                delay(40)
+            }
+
+            // 5. Send robot operating mode if set
+            if (_robotMode.value.isNotBlank()) {
+                bluetoothManager.sendCommand(_robotMode.value)
+                delay(40)
+            }
+
+            val slidersSummary = if (currentSliders.isNotEmpty()) {
+                " + ${currentSliders.size} slider(s): " + currentSliders.joinToString(", ") { "${it.prefix}${it.current}" }
+            } else ""
+            Toast.makeText(context, "Controller Started! Presets sent: $speedCmd, $trimCmd$slidersSummary", Toast.LENGTH_SHORT).show()
         }
-
-        // 5. Send robot operating mode if set
-        if (_robotMode.value.isNotBlank()) {
-            bluetoothManager.sendCommand(_robotMode.value)
-        }
-
-        Toast.makeText(context, "System Started: Presets synchronized with ESP32", Toast.LENGTH_SHORT).show()
     }
 
     /**

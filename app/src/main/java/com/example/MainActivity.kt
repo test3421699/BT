@@ -340,7 +340,7 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
                 speedPrefix = speedPrefix,
                 steeringTrim = steeringTrim,
                 trimPrefix = trimPrefix,
-                customSlidersCount = customSliders.size
+                customSliders = customSliders
             )
 
             // 2. Control Grid Area - beautifully padded in the scroll area
@@ -877,7 +877,7 @@ fun StartControllerCard(
     speedPrefix: String,
     steeringTrim: Int,
     trimPrefix: String,
-    customSlidersCount: Int,
+    customSliders: List<CustomSlider>,
     modifier: Modifier = Modifier
 ) {
     var isPressedState by remember { mutableStateOf(false) }
@@ -885,6 +885,12 @@ fun StartControllerCard(
         targetValue = if (isPressedState) 0.96f else 1.0f,
         label = "StartBtnScale"
     )
+
+    val slidersSummary = remember(customSliders) {
+        if (customSliders.isNotEmpty()) {
+            customSliders.joinToString(", ") { "${it.prefix}${it.current}" }
+        } else ""
+    }
 
     Column(
         modifier = modifier
@@ -1000,10 +1006,10 @@ fun StartControllerCard(
             Text(
                 text = if (isStarted) {
                     "Presets synchronized: Speed ($speedPrefix$currentSpeed), Trim ($trimPrefix$steeringTrim)" +
-                            (if (customSlidersCount > 0) ", $customSlidersCount custom slider(s)" else "")
+                            (if (slidersSummary.isNotEmpty()) ", Sliders: [$slidersSummary]" else "")
                 } else {
-                    "Tapping START activates buttons & transmits preset speed ($speedPrefix$currentSpeed) & trim ($trimPrefix$steeringTrim)" +
-                            (if (customSlidersCount > 0) " + $customSlidersCount slider(s)" else "")
+                    "Tapping START activates buttons & transmits presets: Speed ($speedPrefix$currentSpeed), Trim ($trimPrefix$steeringTrim)" +
+                            (if (slidersSummary.isNotEmpty()) ", Sliders: [$slidersSummary]" else "")
                 },
                 color = if (isStarted) Color(0xAA34D399) else Color(0x99FFFFFF),
                 fontSize = 10.sp,
