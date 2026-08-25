@@ -156,6 +156,11 @@ class MainViewModel(private val context: Context) : ViewModel() {
     }
 
     fun toggleControllerStart() {
+        if (bluetoothManager.connectionState.value != ConnectionState.CONNECTED && !_isControllerStarted.value) {
+            Toast.makeText(context, "Cannot start: Please connect to a Bluetooth device first!", Toast.LENGTH_SHORT).show()
+            _isDevicePickerOpen.value = true
+            return
+        }
         if (_isControllerStarted.value) {
             stopController()
         } else {
@@ -168,36 +173,42 @@ class MainViewModel(private val context: Context) : ViewModel() {
      * for speed, steering trim, custom sliders (prefix + value), and robot mode to the ESP32.
      */
     fun startController() {
+        if (bluetoothManager.connectionState.value != ConnectionState.CONNECTED) {
+            Toast.makeText(context, "Cannot start: Please connect to a Bluetooth device first!", Toast.LENGTH_SHORT).show()
+            _isDevicePickerOpen.value = true
+            return
+        }
+
         _isControllerStarted.value = true
 
         viewModelScope.launch {
             // 1. Send Stop command first to ensure safe stationary startup
             _activeMovement.value = "S"
             bluetoothManager.sendCommand(resolveCommand("S"))
-            delay(40)
+            delay(75)
 
             // 2. Send presetted Speed value
             val speedCmd = "${_speedPrefix.value}${_currentSpeed.value}"
             bluetoothManager.sendCommand(speedCmd)
-            delay(40)
+            delay(75)
 
             // 3. Send presetted Steering Trim value
             val trimCmd = "${_trimPrefix.value}${_steeringTrim.value}"
             bluetoothManager.sendCommand(trimCmd)
-            delay(40)
+            delay(75)
 
             // 4. Send all presetted Custom Slider values along with their configured prefixes
             val currentSliders = _customSliders.value
             currentSliders.forEach { slider ->
                 val sliderCmd = "${slider.prefix}${slider.current}"
                 bluetoothManager.sendCommand(sliderCmd)
-                delay(40)
+                delay(75)
             }
 
             // 5. Send robot operating mode if set
             if (_robotMode.value.isNotBlank()) {
                 bluetoothManager.sendCommand(_robotMode.value)
-                delay(40)
+                delay(75)
             }
 
             val slidersSummary = if (currentSliders.isNotEmpty()) {

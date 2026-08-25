@@ -335,6 +335,7 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
             // 1.5. Start / Arm Controller Section
             StartControllerCard(
                 isStarted = isControllerStarted,
+                isConnected = connectionState == ConnectionState.CONNECTED,
                 onToggleStart = { viewModel.toggleControllerStart() },
                 currentSpeed = currentSpeed,
                 speedPrefix = speedPrefix,
@@ -872,6 +873,7 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
 @Composable
 fun StartControllerCard(
     isStarted: Boolean,
+    isConnected: Boolean,
     onToggleStart: () -> Unit,
     currentSpeed: Int,
     speedPrefix: String,
@@ -880,6 +882,7 @@ fun StartControllerCard(
     customSliders: List<CustomSlider>,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var isPressedState by remember { mutableStateOf(false) }
     val scaleFactor by animateFloatAsState(
         targetValue = if (isPressedState) 0.96f else 1.0f,
@@ -892,19 +895,25 @@ fun StartControllerCard(
         } else ""
     }
 
+    val cardBg = when {
+        !isConnected -> Color(0xFF161622)
+        isStarted -> Color(0xFF13221C)
+        else -> Color(0xFF181826)
+    }
+
+    val cardBorder = when {
+        !isConnected -> Color(0x22FFFFFF)
+        isStarted -> Color(0xFF10B981).copy(alpha = 0.8f)
+        else -> TechCyan.copy(alpha = 0.5f)
+    }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 6.dp)
             .clip(RoundedCornerShape(20.dp))
-            .background(if (isStarted) Color(0xFF13221C) else Color(0xFF181826))
-            .border(
-                BorderStroke(
-                    1.5.dp,
-                    if (isStarted) Color(0xFF10B981).copy(alpha = 0.8f) else TechCyan.copy(alpha = 0.5f)
-                ),
-                RoundedCornerShape(20.dp)
-            )
+            .background(cardBg)
+            .border(BorderStroke(1.5.dp, cardBorder), RoundedCornerShape(20.dp))
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -918,14 +927,26 @@ fun StartControllerCard(
                     modifier = Modifier
                         .size(10.dp)
                         .background(
-                            if (isStarted) Color(0xFF10B981) else Color(0xFF6B7280),
+                            when {
+                                !isConnected -> Color(0xFF6B7280)
+                                isStarted -> Color(0xFF10B981)
+                                else -> TechCyan
+                            },
                             CircleShape
                         )
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = if (isStarted) "CONTROLLER ARMED & ACTIVE" else "CONTROLLER STANDBY (LOCKED)",
-                    color = if (isStarted) Color(0xFF34D399) else GrayMuted,
+                    text = when {
+                        !isConnected -> "BLUETOOTH DISCONNECTED (CONNECT TO START)"
+                        isStarted -> "CONTROLLER ARMED & ACTIVE"
+                        else -> "DEVICE CONNECTED - READY TO START"
+                    },
+                    color = when {
+                        !isConnected -> GrayMuted
+                        isStarted -> Color(0xFF34D399)
+                        else -> TechCyan
+                    },
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
@@ -933,9 +954,17 @@ fun StartControllerCard(
             }
 
             Icon(
-                imageVector = if (isStarted) Icons.Default.LockOpen else Icons.Default.Lock,
+                imageVector = when {
+                    !isConnected -> Icons.Default.Bluetooth
+                    isStarted -> Icons.Default.LockOpen
+                    else -> Icons.Default.Lock
+                },
                 contentDescription = null,
-                tint = if (isStarted) Color(0xFF34D399) else GrayMuted,
+                tint = when {
+                    !isConnected -> GrayMuted
+                    isStarted -> Color(0xFF34D399)
+                    else -> TechCyan
+                },
                 modifier = Modifier.size(16.dp)
             )
         }
@@ -943,16 +972,36 @@ fun StartControllerCard(
         Spacer(modifier = Modifier.height(12.dp))
 
         // Big Prominent Start/Stop Action Button
+        val buttonBg = when {
+            !isConnected -> Color(0xFF2A2A3A)
+            isStarted -> StopRed
+            else -> TechCyan
+        }
+        val buttonText = when {
+            !isConnected -> "CONNECT BLUETOOTH TO START"
+            isStarted -> "STOP CONTROLLER (STANDBY)"
+            else -> "START CONTROLLER"
+        }
+        val buttonTextColor = when {
+            !isConnected -> Color(0x99FFFFFF)
+            isStarted -> White
+            else -> Color(0xFF14141E)
+        }
+        val buttonIcon = when {
+            !isConnected -> Icons.Default.BluetoothConnected
+            isStarted -> Icons.Default.Stop
+            else -> Icons.Default.PowerSettingsNew
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp)
                 .scale(scaleFactor)
+                .alpha(if (!isConnected) 0.65f else 1.0f)
                 .clip(RoundedCornerShape(14.dp))
-                .background(
-                    if (isStarted) StopRed else TechCyan
-                )
-                .pointerInput(isStarted) {
+                .background(buttonBg)
+                .pointerInput(isStarted, isConnected) {
                     detectTapGestures(
                         onPress = {
                             isPressedState = true
@@ -972,17 +1021,17 @@ fun StartControllerCard(
                 horizontalArrangement = Arrangement.Center
             ) {
                 Icon(
-                    imageVector = if (isStarted) Icons.Default.Stop else Icons.Default.PowerSettingsNew,
-                    contentDescription = if (isStarted) "Stop Controller" else "Start Controller",
-                    tint = if (isStarted) White else Color(0xFF14141E),
+                    imageVector = buttonIcon,
+                    contentDescription = buttonText,
+                    tint = buttonTextColor,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = if (isStarted) "STOP CONTROLLER (STANDBY)" else "START CONTROLLER",
-                    color = if (isStarted) White else Color(0xFF14141E),
+                    text = buttonText,
+                    color = buttonTextColor,
                     fontWeight = FontWeight.Black,
-                    fontSize = 14.sp,
+                    fontSize = 13.sp,
                     letterSpacing = 1.sp
                 )
             }
@@ -1004,11 +1053,11 @@ fun StartControllerCard(
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text = if (isStarted) {
-                    "Presets synchronized: Speed ($speedPrefix$currentSpeed), Trim ($trimPrefix$steeringTrim)" +
+                text = when {
+                    !isConnected -> "Connect to ESP32 to unlock control grid & enable live preset transmission"
+                    isStarted -> "Presets synchronized: Speed ($speedPrefix$currentSpeed), Trim ($trimPrefix$steeringTrim)" +
                             (if (slidersSummary.isNotEmpty()) ", Sliders: [$slidersSummary]" else "")
-                } else {
-                    "Tapping START activates buttons & transmits presets: Speed ($speedPrefix$currentSpeed), Trim ($trimPrefix$steeringTrim)" +
+                    else -> "Tapping START activates buttons & transmits presets: Speed ($speedPrefix$currentSpeed), Trim ($trimPrefix$steeringTrim)" +
                             (if (slidersSummary.isNotEmpty()) ", Sliders: [$slidersSummary]" else "")
                 },
                 color = if (isStarted) Color(0xAA34D399) else Color(0x99FFFFFF),
